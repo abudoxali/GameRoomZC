@@ -22,6 +22,7 @@ export const sessionSchema = z
       .string()
       .trim()
       .regex(/^[0-9A-Za-z٠-٩-]{1,30}$/),
+    studentName: z.string().trim().max(120).optional(),
     activity: z.enum(activities),
     equipment: z.string().trim().max(80),
     day: date,

@@ -194,6 +194,74 @@ export async function buildWorkbook(
       };
     });
   });
+  const details = book.addWorksheet("تفاصيل الجلسات", {
+    views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
+    pageSetup: {
+      paperSize: 9,
+      orientation: "landscape",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      printTitlesRow: "1:1",
+    },
+  });
+  details.columns = [
+    { header: "ID", width: 18 },
+    { header: "اسم الطالب", width: 30 },
+    { header: "النشاط", width: 18 },
+    { header: "النوع", width: 22 },
+    { header: "من", width: 20 },
+    { header: "إلى", width: 20 },
+    { header: "السعر", width: 16 },
+    { header: "التاريخ", width: 16 },
+    { header: "الحالة", width: 16 },
+  ];
+  rows.forEach((s) =>
+    details.addRow([
+      s.studentId,
+      s.studentName || "—",
+      activityLabel[s.activity],
+      s.equipment || "—",
+      new Date(cairoInput(s.startAt) + "Z"),
+      s.endAt ? new Date(cairoInput(s.endAt) + "Z") : "—",
+      s.price === null ? "غير نهائي" : s.price / 100,
+      new Date(day + "T00:00:00Z"),
+      s.status === "active" ? "نشطة" : "مكتملة",
+    ]),
+  );
+  details.eachRow((row, r) => {
+    row.height = r === 1 ? 30 : 28;
+    row.eachCell((cell, col) => {
+      cell.font = {
+        name: "Arial",
+        size: 11,
+        bold: r === 1,
+        color: { argb: r === 1 ? "FFFFFFFF" : "FF24334D" },
+      };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: {
+          argb: r === 1 ? "FF18284D" : r % 2 === 0 ? "FFF2F5FA" : "FFFFFFFF",
+        },
+      };
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        readingOrder: "rtl",
+        wrapText: true,
+      };
+      if (r > 1)
+        cell.numFmt =
+          col === 5 || col === 6
+            ? "yyyy-mm-dd hh:mm"
+            : col === 7
+              ? '#,##0.00 "ج.م."'
+              : col === 8
+                ? "yyyy-mm-dd"
+                : "@";
+    });
+  });
   return book;
 }
 export function downloadBlob(blob: Blob, name: string) {

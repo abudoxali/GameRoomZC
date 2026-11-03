@@ -1,5 +1,13 @@
 # GameRoomZC Status
 
+## Current update — 2026-11-03
+
+Arabic readability and simplified operation implemented. Replaced the sidebar with compact top navigation (bottom navigation on phones), increased Arabic typography and contrast, removed repeated add buttons, grouped export/closing under day options, placed manual times/equipment inside optional details and moved deletion into the session editor.
+
+Student name is entered beside the student ID in the same new-session form. It is optional for backward compatibility, stored locally, editable, searchable, shown in daily/history records and preserved in JSON backups. Legacy unnamed sessions/backups remain valid without a destructive database migration. The original paper-format Excel sheet is unchanged; a new Arabic session-details worksheet includes names.
+
+Local verification: TypeScript PASS; 18/18 unit/integration tests PASS; production build PASS; 18/18 desktop/mobile browser tests PASS (34.6 seconds, measured). Screenshots of the larger Arabic UI and same-form student-name entry inspected. Layout checks pass at 320px, 768px and 1440px. Publication of this update is pending; previous release verification below refers to the earlier published version.
+
 ## Implementation
 
 Application implemented, published and verified in production. Local directory and public remote were inspected and empty before implementation. The supplied paper image was reviewed; the workbook preserves its two side-by-side registers and six headings.

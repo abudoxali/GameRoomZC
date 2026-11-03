@@ -10,6 +10,7 @@ it("reopens a real RTL workbook with both paper registers, currency, dates and c
   ): Session => ({
     id: crypto.randomUUID(),
     studentId: "001234",
+    studentName: "أحمد محمد",
     activity,
     price,
     day,
@@ -44,4 +45,8 @@ it("reopens a real RTL workbook with both paper registers, currency, dates and c
   expect(summary.getCell("B6").value).toBe(2);
   expect(summary.getCell("B9").value).toBe(42.5);
   expect(summary.getCell("B10").value).toBe(1);
+  const details = reopened.getWorksheet("تفاصيل الجلسات")!;
+  expect(details.getCell("B2").value).toBe("أحمد محمد");
+  expect(details.getCell("A2").value).toBe("001234");
+  expect(details.rowCount).toBe(4);
 });

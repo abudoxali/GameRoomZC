@@ -1,11 +1,10 @@
 import {
   Clock3,
   Gamepad2,
-  Plus,
   Target,
   Pencil,
-  Trash2,
   Check,
+  UserRound,
 } from "lucide-react";
 import { Badge } from "./components";
 import {
@@ -22,10 +21,8 @@ type Props = {
   sessions: Session[];
   editable: boolean;
   busy: boolean;
-  onAdd: () => void;
   onEdit: (s: Session) => void;
   onFinish: (s: Session) => void;
-  onDelete: (s: Session) => void;
 };
 function Actions({
   session: s,
@@ -33,8 +30,7 @@ function Actions({
   busy,
   onEdit,
   onFinish,
-  onDelete,
-}: Pick<Props, "editable" | "busy" | "onEdit" | "onFinish" | "onDelete"> & {
+}: Pick<Props, "editable" | "busy" | "onEdit" | "onFinish"> & {
   session: Session;
 }) {
   return editable ? (
@@ -46,26 +42,17 @@ function Actions({
           disabled={busy}
           aria-label={`إنهاء الجلسة ${s.studentId}`}
         >
-          <Check size={14} /> إنهاء
+          <Check size={16} /> إنهاء
         </button>
       )}
       <button
         className="icon-button"
-        title="تعديل"
+        title="تعديل الجلسة"
         aria-label={`تعديل الجلسة ${s.studentId}`}
         onClick={() => onEdit(s)}
         disabled={busy}
       >
-        <Pencil size={15} />
-      </button>
-      <button
-        className="icon-button danger-text"
-        title="حذف"
-        aria-label={`حذف الجلسة ${s.studentId}`}
-        onClick={() => onDelete(s)}
-        disabled={busy}
-      >
-        <Trash2 size={15} />
+        <Pencil size={17} />
       </button>
     </div>
   ) : (
@@ -79,16 +66,34 @@ function Status({ session: s }: { session: Session }) {
     </Badge>
   );
 }
+function Student({ session: s }: { session: Session }) {
+  return (
+    <div className="student-cell">
+      <span className="student-avatar">
+        <UserRound size={18} />
+      </span>
+      <div>
+        {s.studentName && (
+          <strong className="student-name">{s.studentName}</strong>
+        )}
+        <bdi className={s.studentName ? "student-number" : "student-id"}>
+          {s.studentId}
+        </bdi>
+      </div>
+    </div>
+  );
+}
 function Price({ session: s }: { session: Session }) {
   return s.status === "completed" ? (
     <>{currency(s.price ?? 0)}</>
   ) : (
-    <span className="muted">غير نهائي</span>
+    <span className="muted">—</span>
   );
 }
 export function RegisterTable(props: Props) {
-  const { activity, sessions, editable, busy, onAdd } = props;
-  const Icon = activity === "billiards" ? Target : Gamepad2;
+  const { activity, sessions } = props,
+    Icon = activity === "billiards" ? Target : Gamepad2,
+    stats = totals(sessions);
   return (
     <section
       className={`register ${activity}`}
@@ -97,36 +102,24 @@ export function RegisterTable(props: Props) {
       <div className="register-head">
         <div className="section-title">
           <span className="activity-icon">
-            <Icon size={23} />
+            <Icon size={24} />
           </span>
           <div>
             <h3>{activityLabel[activity]}</h3>
-            <p>{sessions.length.toLocaleString("ar-EG")} جلسة في العرض</p>
+            <p>{sessions.length.toLocaleString("ar-EG")} جلسة</p>
           </div>
         </div>
-        {editable && (
-          <button
-            className="icon-button add-small"
-            aria-label={`إضافة جلسة ${activityLabel[activity]}`}
-            onClick={onAdd}
-            disabled={busy}
-          >
-            <Plus size={20} />
-          </button>
+        {stats.active > 0 && (
+          <Badge active>{stats.active.toLocaleString("ar-EG")} نشطة</Badge>
         )}
       </div>
-      {!sessions.length ? (
+      {sessions.length === 0 ? (
         <div className="empty">
           <span className="empty-icon">
-            <Icon size={30} />
+            <Icon size={32} />
           </span>
           <h4>لا توجد جلسات {activityLabel[activity]}</h4>
-          <p>ستظهر الجلسات هنا بمجرد تسجيلها.</p>
-          {editable && (
-            <button className="text-button" onClick={onAdd} disabled={busy}>
-              <Plus size={16} /> تسجيل أول جلسة
-            </button>
-          )}
+          <p>ابدأ من «إضافة جلسة» وسجّل الطالب.</p>
         </div>
       ) : (
         <>
@@ -137,46 +130,36 @@ export function RegisterTable(props: Props) {
               </caption>
               <thead>
                 <tr>
-                  {[
-                    "ID",
-                    "من",
-                    "إلى",
-                    "النوع",
-                    "السعر",
-                    "التاريخ",
-                    "الحالة",
-                    "المدة",
-                    "الإجراءات",
-                  ].map((h) => (
-                    <th key={h} scope="col">
-                      {h}
-                    </th>
-                  ))}
+                  {["الطالب", "الوقت", "النوع", "السعر", "الحالة", ""].map(
+                    (h, i) => (
+                      <th key={i} scope="col">
+                        {h || <span className="sr-only">الإجراءات</span>}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {sessions.map((s) => (
                   <tr key={s.id}>
                     <td>
-                      <bdi className="student-id">{s.studentId}</bdi>
+                      <Student session={s} />
                     </td>
-                    <td className="time">{displayTime(s.startAt)}</td>
                     <td className="time">
-                      {s.endAt ? displayTime(s.endAt) : "—"}
+                      <span>{displayTime(s.startAt)}</span>
+                      <small>
+                        {s.endAt
+                          ? `إلى ${displayTime(s.endAt)}`
+                          : "مستمرة الآن"}
+                      </small>
+                      <small>{duration(s).toLocaleString("ar-EG")} دقيقة</small>
                     </td>
                     <td>{s.equipment || "—"}</td>
                     <td className="price">
                       <Price session={s} />
                     </td>
                     <td>
-                      <bdi>{s.day}</bdi>
-                    </td>
-                    <td>
                       <Status session={s} />
-                    </td>
-                    <td>
-                      {duration(s).toLocaleString("ar-EG")} د{" "}
-                      {s.status === "active" ? "تقريبًا" : ""}
                     </td>
                     <td>
                       <Actions {...props} session={s} />
@@ -190,25 +173,24 @@ export function RegisterTable(props: Props) {
             {sessions.map((s) => (
               <article key={s.id} className="session-card">
                 <div className="session-card-top">
-                  <div>
-                    <span className="muted">الرقم الجامعي </span>
-                    <bdi className="student-id">{s.studentId}</bdi>
-                  </div>
+                  <Student session={s} />
                   <Status session={s} />
                 </div>
                 <dl>
                   <div>
-                    <dt>من</dt>
+                    <dt>البداية</dt>
                     <dd>{displayTime(s.startAt)}</dd>
                   </div>
                   <div>
-                    <dt>إلى</dt>
+                    <dt>النهاية</dt>
                     <dd>{s.endAt ? displayTime(s.endAt) : "مستمرة الآن"}</dd>
                   </div>
-                  <div>
-                    <dt>النوع</dt>
-                    <dd>{s.equipment || activityLabel[activity]}</dd>
-                  </div>
+                  {s.equipment && (
+                    <div>
+                      <dt>النوع</dt>
+                      <dd>{s.equipment}</dd>
+                    </div>
+                  )}
                   <div>
                     <dt>السعر</dt>
                     <dd>
@@ -216,17 +198,8 @@ export function RegisterTable(props: Props) {
                     </dd>
                   </div>
                   <div>
-                    <dt>التاريخ</dt>
-                    <dd>
-                      <bdi>{s.day}</bdi>
-                    </dd>
-                  </div>
-                  <div>
                     <dt>المدة</dt>
-                    <dd>
-                      {duration(s).toLocaleString("ar-EG")} دقيقة{" "}
-                      {s.status === "active" ? "تقريبًا" : ""}
-                    </dd>
+                    <dd>{duration(s).toLocaleString("ar-EG")} دقيقة</dd>
                   </div>
                 </dl>
                 <Actions {...props} session={s} />
@@ -237,10 +210,10 @@ export function RegisterTable(props: Props) {
       )}
       <div className="register-footer">
         <span>
-          <Clock3 size={15} /> {totals(sessions).active.toLocaleString("ar-EG")}{" "}
-          جلسات نشطة في العرض
+          <Clock3 size={16} /> {stats.completed.toLocaleString("ar-EG")} جلسات
+          مكتملة في العرض
         </span>
-        <strong>{currency(totals(sessions).revenue)}</strong>
+        <strong>{currency(stats.revenue)}</strong>
       </div>
     </section>
   );

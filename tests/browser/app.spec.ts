@@ -1,4 +1,15 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+async function openDetails(page: Page) {
+  const panel = page.locator("dialog .form-details");
+  if ((await panel.getAttribute("open")) === null)
+    await panel.locator("summary").click();
+}
+async function dayOptions(page: Page) {
+  const menu = page.locator("details.day-menu");
+  if ((await menu.getAttribute("open")) === null)
+    await menu.locator("summary").click();
+}
+
 import ExcelJS from "exceljs";
 test("Arabic daily operation, persistence, Excel, safe close, archive and backup restoration", async ({
   page,
@@ -16,6 +27,11 @@ test("Arabic daily operation, persistence, Excel, safe close, archive and backup
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await page.getByRole("button", { name: "إضافة جلسة", exact: true }).click();
   await page.getByLabel("الرقم الجامعي للطالب").fill("TEST001");
+  await page.getByLabel("اسم الطالب").fill("أحمد محمد");
+  await page.screenshot({
+    path: `test-results/${test.info().project.name}-add-session.png`,
+  });
+  await openDetails(page);
   await page.getByLabel("وقت البداية").fill("2026-11-03T23:30");
   await page.getByRole("button", { name: "بدء الجلسة", exact: true }).click();
   await expect(
@@ -25,12 +41,14 @@ test("Arabic daily operation, persistence, Excel, safe close, archive and backup
   await expect(
     page.getByText("TEST001", { exact: true }).filter({ visible: true }),
   ).toBeVisible();
+  await dayOptions(page);
   await page.getByRole("button", { name: "إنهاء اليوم", exact: true }).click();
   await expect(page.getByText(/توجد ١ جلسات نشطة/)).toBeVisible();
   await page.getByRole("button", { name: "مراجعة الجلسات النشطة" }).click();
   await page
     .getByRole("button", { name: "إنهاء الجلسة TEST001", exact: true })
     .click();
+  await openDetails(page);
   await page.getByLabel("وقت النهاية").fill("2026-11-04T00:30");
   await page.getByLabel("السعر النهائي بالجنيه المصري").fill("12.50");
   await page.getByRole("button", { name: "حفظ الجلسة المكتملة" }).click();
@@ -45,8 +63,18 @@ test("Arabic daily operation, persistence, Excel, safe close, archive and backup
   await page.getByLabel("السعر النهائي بالجنيه المصري").fill("15.25");
   await page.getByRole("button", { name: "حفظ الجلسة المكتملة" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await page.getByLabel("البحث في الجلسات").fill("أحمد");
+  await expect(
+    page.getByText("أحمد محمد", { exact: true }).filter({ visible: true }),
+  ).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: `test-results/${test.info().project.name}-named-session.png`,
+    fullPage: true,
+  });
   await page.getByLabel("البحث في الجلسات").fill("nothing");
   const downloadPromise = page.waitForEvent("download");
+  await dayOptions(page);
   await page.getByRole("button", { name: "تصدير إكسل" }).click();
   const report = await downloadPromise;
   expect(report.suggestedFilename()).toMatch(
@@ -58,7 +86,11 @@ test("Arabic daily operation, persistence, Excel, safe close, archive and backup
     "TEST001",
   );
   expect(workbook.getWorksheet("الملخص")!.getCell("B9").value).toBe(15.25);
+  expect(workbook.getWorksheet("تفاصيل الجلسات")!.getCell("B2").value).toBe(
+    "أحمد محمد",
+  );
   await page.getByLabel("البحث في الجلسات").fill("");
+  await dayOptions(page);
   await page.getByRole("button", { name: "إنهاء اليوم", exact: true }).click();
   const closeDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "تجهيز التقرير وتنزيله" }).click();
@@ -173,10 +205,13 @@ test("configured rates are optional, transparent and can be overridden", async (
   await page.getByRole("link", { name: "السجل اليومي", exact: true }).click();
   await page.getByRole("button", { name: "إضافة جلسة", exact: true }).click();
   await page.getByLabel("الرقم الجامعي للطالب").fill("RATE001");
+  await openDetails(page);
   await page.getByLabel("الطاولة أو الجهاز أو نوع اللعبة").fill("طاولة ١");
+  await openDetails(page);
   await page.getByLabel("وقت البداية").fill("2026-11-03T10:00");
   await page.getByRole("button", { name: "بدء الجلسة", exact: true }).click();
   await page.getByRole("button", { name: "إنهاء الجلسة RATE001" }).click();
+  await openDetails(page);
   await page.getByLabel("وقت النهاية").fill("2026-11-03T10:30");
   await page.getByRole("button", { name: "استخدام السعر" }).click();
   await expect(page.getByLabel("السعر النهائي بالجنيه المصري")).toHaveValue(
@@ -200,6 +235,7 @@ test("keyboard cancellation, deletion, invalid restoration and responsive empty 
   await page.getByRole("button", { name: "إضافة جلسة", exact: true }).click();
   await page.getByLabel("الرقم الجامعي للطالب").fill("TEST002");
   await page.getByRole("button", { name: "بدء الجلسة", exact: true }).click();
+  await page.getByRole("button", { name: "تعديل الجلسة TEST002" }).click();
   await page.getByRole("button", { name: "حذف الجلسة TEST002" }).click();
   await page.getByRole("button", { name: "تأكيد الحذف" }).click();
   await expect(page.getByText("TEST002", { exact: true })).toBeHidden();
@@ -223,9 +259,11 @@ test("invalid time errors remain readable inside the active modal", async ({
   await page.goto("./");
   await page.getByRole("button", { name: "إضافة جلسة", exact: true }).click();
   await page.getByLabel("الرقم الجامعي للطالب").fill("INVALID001");
+  await openDetails(page);
   await page.getByLabel("وقت البداية").fill("2026-11-03T12:00");
   await page.getByRole("button", { name: "بدء الجلسة", exact: true }).click();
   await page.getByRole("button", { name: "إنهاء الجلسة INVALID001" }).click();
+  await openDetails(page);
   await page.getByLabel("وقت النهاية").fill("2026-11-03T11:00");
   await page.getByLabel("السعر النهائي بالجنيه المصري").fill("10");
   await page.getByRole("button", { name: "حفظ الجلسة المكتملة" }).click();
@@ -272,11 +310,13 @@ test("two operator tabs cannot silently overwrite a changed session", async ({
   await other.goto("./");
   await other.getByRole("button", { name: "تعديل الجلسة TABS001" }).click();
   await page.getByRole("button", { name: "تعديل الجلسة TABS001" }).click();
+  await openDetails(page);
   await page
     .getByLabel("الطاولة أو الجهاز أو نوع اللعبة")
     .fill("التعديل الأول");
   await page.getByRole("button", { name: "حفظ التعديلات" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await openDetails(other);
   await other
     .getByLabel("الطاولة أو الجهاز أو نوع اللعبة")
     .fill("التعديل القديم");
@@ -296,6 +336,7 @@ test("closing acknowledgment stays tied to the downloaded snapshot across operat
   context,
 }) => {
   await page.goto("./");
+  await dayOptions(page);
   await page.getByRole("button", { name: "إنهاء اليوم", exact: true }).click();
   let file = page.waitForEvent("download");
   await page.getByRole("button", { name: "تجهيز التقرير وتنزيله" }).click();
@@ -303,6 +344,7 @@ test("closing acknowledgment stays tied to the downloaded snapshot across operat
   const other = await context.newPage();
   await other.goto("./");
   await other.getByRole("button", { name: "العودة للسجل" }).click();
+  await dayOptions(other);
   await other.getByRole("button", { name: "إنهاء اليوم", exact: true }).click();
   const otherFile = other.waitForEvent("download");
   await other.getByRole("button", { name: "تجهيز التقرير وتنزيله" }).click();
@@ -321,4 +363,24 @@ test("closing acknowledgment stays tied to the downloaded snapshot across operat
   await page.getByRole("button", { name: "أرشفة اليوم وفتح سجل جديد" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await other.close();
+});
+
+test("larger Arabic type stays readable without page overflow on compact phones and tablets", async ({
+  page,
+}) => {
+  await page.goto("./");
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(
+      page.getByRole("button", { name: "إضافة جلسة", exact: true }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.getByRole("button", { name: "إضافة جلسة", exact: true }).click();
+  await expect(page.getByLabel("اسم الطالب")).toBeVisible();
+  await expect(page.getByLabel("وقت البداية")).toBeHidden();
 });

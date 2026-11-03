@@ -213,6 +213,20 @@ it("rejects acknowledgment for an outdated report after a closing cycle is cance
   expect((await r.read()).days[0].status).toBe("pending");
 });
 
+it("keeps student names through edits, backup and restore while accepting legacy unnamed sessions", async () => {
+  const r = db(),
+    state = await r.read();
+  const legacy = create(state.currentDay);
+  await r.save(legacy);
+  expect((await r.read()).sessions[0].studentName).toBeUndefined();
+  const named = { ...legacy, studentName: "  أحمد محمد  " };
+  const saved = await r.save(named, legacy.updatedAt);
+  expect(saved.sessions[0].studentName).toBe("أحمد محمد");
+  const target = db();
+  await target.restore(await r.backup());
+  expect((await target.read()).sessions[0].studentName).toBe("أحمد محمد");
+});
+
 describe("time and financial rules", () => {
   it("handles Cairo midnight across explicit dates", () => {
     const a = fromCairo("2026-11-03T23:30"),

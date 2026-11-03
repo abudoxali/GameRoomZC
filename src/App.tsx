@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  LayoutDashboard,
-  History,
-  Settings as SettingsIcon,
   Gamepad2,
   Plus,
   Download,
@@ -10,7 +7,6 @@ import {
   CalendarDays,
   HardDrive,
   Search,
-  ArrowUpLeft,
   Coins,
   CheckCheck,
   Activity,
@@ -19,6 +15,7 @@ import {
   AlertCircle,
   CheckCircle2,
   RefreshCw,
+  MoreHorizontal,
 } from "lucide-react";
 import { Register, validateBackup } from "./store";
 import {
@@ -37,6 +34,7 @@ import { Modal, Badge, OperationErrorContext } from "./components";
 import { SessionForm } from "./SessionForm";
 import { RegisterTable } from "./RegisterTable";
 import { Settings } from "./Settings";
+import { AppHeader } from "./AppHeader";
 const register = new Register();
 type Page = "daily" | "history" | "settings";
 const getPage = (): Page =>
@@ -164,6 +162,9 @@ export default function App() {
       (s) =>
         (!query ||
           s.studentId.toLowerCase().includes(query.trim().toLowerCase()) ||
+          (s.studentName ?? "")
+            .toLowerCase()
+            .includes(query.trim().toLowerCase()) ||
           s.equipment.includes(query.trim())) &&
         (filter === "all" || s.status === filter) &&
         (activityFilter === "all" || s.activity === activityFilter),
@@ -197,90 +198,14 @@ export default function App() {
   return (
     <OperationErrorContext value={toast?.error ? toast.text : ""}>
       <div className="app-shell">
-        <aside className="sidebar">
-          <a className="brand" href="#" aria-label="العودة إلى السجل اليومي">
-            <span className="brand-mark">
-              <Gamepad2 size={28} />
-            </span>
-            <span>
-              غرفة الألعاب<small>مـديـنـة زويـل</small>
-            </span>
-          </a>
-          <span className="nav-caption">مساحة العمل</span>
-          <nav aria-label="التنقل الرئيسي">
-            {(
-              [
-                { id: "daily", label: "السجل اليومي", icon: LayoutDashboard },
-                { id: "history", label: "السجلات السابقة", icon: History },
-                { id: "settings", label: "الإعدادات", icon: SettingsIcon },
-              ] as const
-            ).map(({ id, label, icon: Icon }) => (
-              <a
-                key={id}
-                href={id === "daily" ? "#" : `#${id}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate(id);
-                }}
-                className={page === id ? "nav-link current" : "nav-link"}
-                aria-current={page === id ? "page" : undefined}
-              >
-                <Icon size={20} />
-                <span>{label}</span>
-                {page === id && <span className="nav-dot" />}
-              </a>
-            ))}
-          </nav>
-          <div className="sidebar-bottom">
-            <div className="local-note">
-              <HardDrive size={20} />
-              <strong>بياناتك على جهازك</strong>
-              <p>
-                حفظ محلي، وخصوصية كاملة.
-                <br />
-                احتفظ بنسخة احتياطية بانتظام.
-              </p>
-              <button
-                className="sidebar-backup"
-                onClick={() => navigate("settings")}
-              >
-                إدارة النسخ الاحتياطية <ArrowUpLeft size={16} />
-              </button>
-            </div>
-            <p className="sidebar-credit">
-              مدينة زويل
-              <br />
-              <span>للعلوم والتكنولوجيا والابتكار</span>
-            </p>
-          </div>
-        </aside>
+        <AppHeader page={page} onNavigate={navigate} />
         <div className="workspace">
-          <header className="topbar">
-            <div>
-              <span className="eyebrow">
-                مدينة زويل للعلوم والتكنولوجيا والابتكار
-              </span>
-              <h1>إدارة غرفة الألعاب</h1>
-            </div>
-            <div className="topbar-meta">
-              <span className="storage-pill">
-                <span /> محفوظ على هذا الجهاز
-              </span>
-              <button
-                className="icon-button"
-                aria-label="فتح الإعدادات"
-                onClick={() => navigate("settings")}
-              >
-                <SettingsIcon size={20} />
-              </button>
-            </div>
-          </header>
           <main className="main-content" id="main">
             <div className="page-heading">
               <div>
                 <p className="eyebrow">
                   {page === "daily"
-                    ? "كل شيء جاهز ليومٍ جديد"
+                    ? "يومك أسهل، وسجلّك منظّم"
                     : page === "history"
                       ? "سجلات محفوظة، دائمًا في متناولك"
                       : "مساحة عمل تناسب يومك"}
@@ -294,7 +219,7 @@ export default function App() {
                 </h2>
                 <p className="muted">
                   {page === "daily"
-                    ? "تابع الجلسات، وسجّل اللعب، وأنهِ يومك بكل سهولة."
+                    ? "أضف الطالب، اختر النشاط، وابدأ اللعب."
                     : page === "history"
                       ? "راجع الأيام السابقة ونزّل تقاريرها في أي وقت."
                       : "خصّص خيارات الأنشطة واحمِ بيانات الغرفة."}
@@ -396,7 +321,12 @@ export default function App() {
                     <button
                       className="secondary"
                       disabled={busy}
-                      onClick={() => void exportDay()}
+                      onClick={(e) => {
+                        e.currentTarget
+                          .closest("details")
+                          ?.removeAttribute("open");
+                        void exportDay();
+                      }}
                     >
                       <Download size={18} /> تنزيل تقرير اليوم
                     </button>
@@ -468,26 +398,38 @@ export default function App() {
                       >
                         <Plus size={19} /> إضافة جلسة
                       </button>
-                      <button
-                        className="secondary"
-                        onClick={() => void exportDay()}
-                        disabled={busy}
-                      >
-                        <Download size={18} /> تصدير إكسل
-                      </button>
-                      <button
-                        className="secondary"
-                        onClick={() => setClosing(true)}
-                        disabled={busy || pending}
-                      >
-                        <LockKeyhole size={17} /> إنهاء اليوم
-                      </button>
-                      <button
-                        className="text-button history-shortcut"
-                        onClick={() => navigate("history")}
-                      >
-                        <History size={17} /> السجلات السابقة
-                      </button>
+                      <details className="day-menu">
+                        <summary>
+                          <MoreHorizontal size={20} /> خيارات اليوم
+                        </summary>
+                        <div className="menu-panel">
+                          {" "}
+                          <button
+                            className="secondary"
+                            onClick={(e) => {
+                              e.currentTarget
+                                .closest("details")
+                                ?.removeAttribute("open");
+                              void exportDay();
+                            }}
+                            disabled={busy}
+                          >
+                            <Download size={18} /> تصدير إكسل
+                          </button>
+                          <button
+                            className="secondary"
+                            onClick={(e) => {
+                              e.currentTarget
+                                .closest("details")
+                                ?.removeAttribute("open");
+                              setClosing(true);
+                            }}
+                            disabled={busy || pending}
+                          >
+                            <LockKeyhole size={17} /> إنهاء اليوم
+                          </button>
+                        </div>
+                      </details>
                     </div>
                   </section>
                 )}
@@ -504,7 +446,7 @@ export default function App() {
                     <label className="search">
                       <Search size={17} />
                       <input
-                        placeholder="ابحث بالرقم الجامعي أو النوع…"
+                        placeholder="ابحث باسم الطالب أو الرقم الجامعي…"
                         aria-label="البحث في الجلسات"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
@@ -547,12 +489,10 @@ export default function App() {
                         sessions={visible.filter((s) => s.activity === a)}
                         editable={editable}
                         busy={busy}
-                        onAdd={() => setEditor({ activity: a })}
                         onEdit={(s) => setEditor({ session: s })}
                         onFinish={(s) =>
                           setEditor({ session: s, finish: true })
                         }
-                        onDelete={setDeleting}
                       />
                     ))}
                 </div>
@@ -602,6 +542,14 @@ export default function App() {
             busy={busy}
             onClose={() => !busy && setEditor(undefined)}
             onSave={doSave}
+            onDelete={
+              editor.session
+                ? () => {
+                    setDeleting(editor.session);
+                    setEditor(undefined);
+                  }
+                : undefined
+            }
           />
         )}{" "}
         {deleting && (
