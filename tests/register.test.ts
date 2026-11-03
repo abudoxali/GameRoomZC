@@ -203,6 +203,16 @@ describe("register persistence and safe operations", () => {
     ).toHaveLength(1);
   });
 });
+it("rejects acknowledgment for an outdated report after a closing cycle is cancelled and restarted", async () => {
+  const r = db(),
+    s = await r.read();
+  const report = await r.prepare();
+  await r.cancelClose();
+  await r.prepare();
+  await expect(r.confirmClose(s.currentDay, report.revision)).rejects.toThrow();
+  expect((await r.read()).days[0].status).toBe("pending");
+});
+
 describe("time and financial rules", () => {
   it("handles Cairo midnight across explicit dates", () => {
     const a = fromCairo("2026-11-03T23:30"),

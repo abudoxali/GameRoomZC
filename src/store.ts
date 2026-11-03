@@ -142,9 +142,16 @@ export class Register {
       d.preparedAt = null;
     });
   }
-  async confirmClose(expectedDay?: string): Promise<State> {
+  async confirmClose(
+    expectedDay?: string,
+    expectedRevision?: number,
+  ): Promise<State> {
     return this.change((s) => {
       this.expectedDay(s, expectedDay);
+      if (expectedRevision !== undefined && s.revision !== expectedRevision)
+        throw Error(
+          "تغير السجل بعد تنزيل التقرير؛ نزّل التقرير مرة أخرى وأكد حفظ النسخة الجديدة",
+        );
       const d = s.days.find((d) => d.date === s.currentDay)!;
       if (d.status !== "pending") throw Error("يجب تنزيل التقرير أولًا");
       d.status = "closed";

@@ -290,3 +290,35 @@ test("two operator tabs cannot silently overwrite a changed session", async ({
   ).toBeVisible();
   await other.close();
 });
+
+test("closing acknowledgment stays tied to the downloaded snapshot across operator tabs", async ({
+  page,
+  context,
+}) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "إنهاء اليوم", exact: true }).click();
+  let file = page.waitForEvent("download");
+  await page.getByRole("button", { name: "تجهيز التقرير وتنزيله" }).click();
+  await file;
+  const other = await context.newPage();
+  await other.goto("./");
+  await other.getByRole("button", { name: "العودة للسجل" }).click();
+  await other.getByRole("button", { name: "إنهاء اليوم", exact: true }).click();
+  const otherFile = other.waitForEvent("download");
+  await other.getByRole("button", { name: "تجهيز التقرير وتنزيله" }).click();
+  await otherFile;
+  await page.bringToFront();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "أرشفة اليوم وفتح سجل جديد" }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "تغير السجل بعد تنزيل التقرير",
+  );
+  file = page.waitForEvent("download");
+  await page.getByRole("button", { name: "تنزيل التقرير مرة أخرى" }).click();
+  await file;
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "أرشفة اليوم وفتح سجل جديد" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await other.close();
+});

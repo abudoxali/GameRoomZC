@@ -21,6 +21,7 @@ React/TypeScript/Vite, bundled Cairo font, Tailwind, Lucide, idb, ExcelJS. Opera
 - UUID-based sessions, creation, completion, manual time edits, midnight-spanning sessions, manual price entry, optional hourly suggestions with overrides, editing, search/filter and confirmed deletion.
 - Transactional IndexedDB persistence; schema versioning, strict validation, write-error handling, duplicate submission rejection, stale-tab protection and browser restart recovery.
 - ExcelJS `.xlsx` reports with both paper registers, Cairo date/time cells, integer-piaster-derived totals, active-session exclusions, summary worksheet and landscape print setup. Export includes all sessions for the selected operational day, independent of filters.
+- Closing acknowledgment is tied to the exact downloaded state revision; cancelling/restarting closing or editing from another tab invalidates a stale report confirmation. Unit and desktop/mobile browser regression tests pass.
 - Two-phase closing: active sessions block closing; the pending day freezes, survives refresh and requires download plus explicit saved-file acknowledgment before atomic archiving and a fresh operational day. Archived records are immutable and remain exportable.
 - Settings, device-specific storage explanation, persistent-storage permission request, full JSON backup validation and non-destructive restore with conflict rejection.
 - Technical README, Arabic operator guide, lockfile, `/GameRoomZC/` base path and automated verification/Pages workflow.
@@ -30,19 +31,19 @@ React/TypeScript/Vite, bundled Cairo font, Tailwind, Lucide, idb, ExcelJS. Opera
 Executed locally:
 
 - TypeScript validation: PASS.
-- Vitest: 16/16 PASS, covering persistence, create/finish/edit/delete, duplicates, invalid inputs, totals, concurrent writes, corrupt-state preservation, safe closing, archive retrieval, backup restoration/conflicts, midnight conversion and workbook reopening/structure/values.
-- Playwright: 14/14 PASS across 1440px desktop and Pixel 7 mobile viewports. Includes actual browser process restart, downloaded workbook reopening, reload during pending closing, rate overrides, storage quota failure, concurrent tabs, invalid restore, modal error visibility, keyboard cancellation and page overflow checks.
+- Vitest: 17/17 PASS, covering persistence, create/finish/edit/delete, duplicates, invalid inputs, totals, concurrent writes, corrupt-state preservation, safe closing, archive retrieval, backup restoration/conflicts, midnight conversion and workbook reopening/structure/values.
+- Playwright: 16/16 PASS across 1440px desktop and Pixel 7 mobile viewports. Includes actual browser process restart, downloaded workbook reopening, reload during pending closing, rate overrides, storage quota failure, concurrent tabs, invalid restore, modal error visibility, keyboard cancellation and page overflow checks.
 - Production build: PASS. ExcelJS is lazy-loaded; fonts and styles are bundled locally.
 - Desktop/mobile dashboard, history and settings screenshots were inspected locally. Synthetic test profiles and screenshots are ignored by git; no real student records were created.
-- Clean lockfile installation (`npm ci`): PASS. Final local typecheck, 16 unit/integration tests, build and 14 browser tests: PASS after the clean install.
+- Clean lockfile installation (`npm ci`): PASS. Final local typecheck, 17 unit/integration tests, build and 16 browser tests: PASS after the clean install.
 
 ## Unfinished features
 
-No known missing core functionality. GitHub push, workflow execution and public production checks remain pending.
+No known missing core functionality. Initial push and GitHub Actions deployment succeeded. Final closing-snapshot protection is verified locally; its push/deployment and public production checks are pending.
 
 ## Publishing
 
-Commit: pending. Deployment: pending. Production: https://abudoxali.github.io/GameRoomZC/
+Initial application commit: 5aa9cf213316e92bf6b475f9dbc35651ca7d7474. Initial deployment: SUCCESS (run 41600322145). Production: https://abudoxali.github.io/GameRoomZC/
 GitHub credentials verified for `abudoxali` with admin/push permissions. Pages API reports `build_type: workflow`; no manual source change is currently required. No unexpected remote history was found.
 
 ## Limitations
@@ -55,4 +56,4 @@ Execution: one implementation owner, no delegated tasks, no model switching. Too
 
 ## Completion
 
-82%: 9 of 11 Definition of Done outcomes verified locally; push and publicly verified deployment remain.
+91%: 10 of 11 Definition of Done outcomes verified; final production verification remains.

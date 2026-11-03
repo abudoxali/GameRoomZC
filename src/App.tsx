@@ -71,6 +71,7 @@ export default function App() {
   const [deleting, setDeleting] = useState<Session>();
   const [closing, setClosing] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+  const [downloadRevision, setDownloadRevision] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [restore, setRestore] = useState<{ json: string; state: State }>();
   const refresh = useCallback(async () => {
@@ -190,6 +191,7 @@ export default function App() {
       setDownloaded(false);
       setSaved(false);
       await downloadReport(fresh.currentDay, fresh.sessions);
+      setDownloadRevision(fresh.revision);
       setDownloaded(true);
     });
   return (
@@ -716,6 +718,8 @@ export default function App() {
                 void run(async () => {
                   const fresh = await register.read();
                   await downloadReport(fresh.currentDay, fresh.sessions);
+                  setDownloadRevision(fresh.revision);
+                  setSaved(false);
                   setDownloaded(true);
                 })
               }
@@ -742,7 +746,12 @@ export default function App() {
                 disabled={busy || !saved || !downloaded}
                 onClick={() =>
                   void run(async () => {
-                    setState(await register.confirmClose(state.currentDay));
+                    setState(
+                      await register.confirmClose(
+                        state.currentDay,
+                        downloadRevision ?? -1,
+                      ),
+                    );
                     setSaved(false);
                     setDownloaded(false);
                   }, "تمت أرشفة اليوم وفتح سجل جديد دون حذف السجلات السابقة")
