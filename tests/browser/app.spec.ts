@@ -238,7 +238,8 @@ test("keyboard cancellation, deletion, invalid restoration and responsive empty 
   await page.getByRole("button", { name: "تعديل الجلسة TEST002" }).click();
   await page.getByRole("button", { name: "حذف الجلسة TEST002" }).click();
   await page.getByRole("button", { name: "تأكيد الحذف" }).click();
-  await expect(page.getByText("TEST002", { exact: true })).toBeHidden();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.getByText("TEST002", { exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "الإعدادات", exact: true }).click();
   await page.getByLabel("اختيار نسخة احتياطية").setInputFiles({
     name: "invalid.json",
